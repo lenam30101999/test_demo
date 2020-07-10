@@ -8,7 +8,7 @@ import tt.authenservice.entity.user.UserDTO;
 import tt.authenservice.service.UserService;
 
 @RestController
-public class AuthenController extends BaseController{
+public class AuthenticationController extends BaseController{
 
     @Autowired
     private UserService userService;

@@ -8,12 +8,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import tt.authenservice.encrypt.EnCryptMD5;
-import tt.authenservice.entity.authentication.Authen;
+import tt.authenservice.entity.authentication.Authentication;
 import tt.authenservice.entity.profile.Profile;
 import tt.authenservice.entity.profile.ProfileDTO;
 import tt.authenservice.entity.user.User;
 import tt.authenservice.entity.user.UserDTO;
-import tt.authenservice.repository.AuthenRepository;
+import tt.authenservice.repository.AuthenticationRepository;
 import tt.authenservice.repository.ProfileRepository;
 import tt.authenservice.repository.UserRepository;
 
@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
     private ProfileRepository profileRepository;
 
     @Autowired
-    private AuthenRepository authenRepository;
+    private AuthenticationRepository authenticationRepository;
 
     @Override
     @Caching(
@@ -98,11 +98,11 @@ public class UserServiceImpl implements UserService {
         if (found != null && matching(found.getPassWord(), password)){
             String token = generateToken(found);
 
-            Authen authen = new Authen();
-            authen.setId(found.getId());
-            authen.setToken(token);
-            authen.setExpiration(createExpires());
-            authenRepository.save(authen);
+            Authentication authentication = new Authentication();
+            authentication.setId(found.getId());
+            authentication.setToken(token);
+            authentication.setExpiration(createExpires());
+            authenticationRepository.save(authentication);
 
             return token;
         }else return null;
@@ -134,10 +134,10 @@ public class UserServiceImpl implements UserService {
     public ProfileDTO updateProfileUser(ProfileDTO profileDTO, String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         Profile profile = profileRepository.findById(id).orElse(null);
-        Authen authen = authenRepository.findById(id).orElse(null);
+        Authentication authentication = authenticationRepository.findById(id).orElse(null);
 
         if (profile != null && checkAccessTokenExpired(accessToken)
-                && accessToken.equals(authen.getToken())){
+                && accessToken.equals(authentication.getToken())){
             profile.setEmail(profileDTO.getEmail());
             profile.setPhoneNumber(profileDTO.getPhoneNumber());
             profile.setHomeTown(profileDTO.getHomeTown());
@@ -152,10 +152,10 @@ public class UserServiceImpl implements UserService {
     public ProfileDTO findProfileByAccessToken(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         Profile profile = profileRepository.findById(id).orElse(null);
-        Authen authen = authenRepository.findById(id).orElse(null);
+        Authentication authentication = authenticationRepository.findById(id).orElse(null);
 
         if (profile != null && checkAccessTokenExpired(accessToken)
-                && accessToken.equals(authen.getToken())){
+                && accessToken.equals(authentication.getToken())){
             return convertToProfileDTO(profile);
         }else return null;
     }
@@ -180,7 +180,7 @@ public class UserServiceImpl implements UserService {
     )
     public void deleteTokenWhenLogout(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
-        authenRepository.deleteById(id);
+        authenticationRepository.deleteById(id);
     }
 
     private User findById(String id) {
@@ -201,14 +201,14 @@ public class UserServiceImpl implements UserService {
 
     private boolean checkAccessTokenExpired(String accessToken){
         String id = getIdUserFromAccessToken(accessToken);
-        Authen authen = authenRepository.findById(id).orElse(null);
+        Authentication authentication = authenticationRepository.findById(id).orElse(null);
 
         Calendar cal = Calendar.getInstance();
         TimeZone tz = cal.getTimeZone();
         ZoneId zid = tz == null ? ZoneId.systemDefault() : tz.toZoneId();
         LocalDateTime now = LocalDateTime.ofInstant(cal.toInstant(), zid);
 
-        if (authen.getExpiration().isAfter(now)){
+        if (authentication.getExpiration().isAfter(now)){
             return true;
         }else return false;
     }

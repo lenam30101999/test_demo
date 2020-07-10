@@ -1,6 +1,5 @@
 package tt.authenservice.service;
 
-import tt.authenservice.entity.authentication.Authen;
 import tt.authenservice.entity.profile.ProfileDTO;
 import tt.authenservice.entity.user.UserDTO;
 
