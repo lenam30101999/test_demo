@@ -36,7 +36,7 @@ public class UserController extends BaseController{
 
             return new ResponseEntity<>(updated, HttpStatus.OK);
         }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(),HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT.getReasonPhrase(),HttpStatus.REQUEST_TIMEOUT);
         }
     }
 
@@ -64,14 +64,14 @@ public class UserController extends BaseController{
         }
     }
 
-    @GetMapping(value = "/")
+    @GetMapping
     public ResponseEntity<?> findProfileById(@RequestParam("accessToken") String token){
         try {
             ProfileDTO profile = userService.findProfileByAccessToken(token);
 
             return new ResponseEntity<>(profile,HttpStatus.OK);
         }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(),HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT.getReasonPhrase(),HttpStatus.REQUEST_TIMEOUT);
         }
     }
 }

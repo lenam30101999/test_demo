@@ -44,11 +44,11 @@ public class AuthenController extends BaseController{
     }
 
     @DeleteMapping(value = "/logout")
-    public ResponseEntity<?> logout(@RequestParam String accessToken){
+    public ResponseEntity<?> logout(@RequestParam("accessToken") String accessToken){
         try {
             userService.deleteTokenWhenLogout(accessToken);
 
-            return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT.getReasonPhrase(), HttpStatus.REQUEST_TIMEOUT);
+            return new ResponseEntity<>(HttpStatus.OK.getReasonPhrase(), HttpStatus.OK);
         }catch (NullPointerException e){
             return new ResponseEntity<>(HttpStatus.SEE_OTHER.getReasonPhrase(),HttpStatus.SEE_OTHER);
         }

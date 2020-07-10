@@ -1,5 +1,6 @@
 package tt.authenservice.entity.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -11,10 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonIgnoreProperties(value = "id",
-                allowGetters = true)
 public class UserDTO {
 
+    @JsonIgnore
     private String id;
 
     @JsonProperty("username")

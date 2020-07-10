@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.persistence.Id;
+import java.time.LocalDateTime;
 
 @Document(collection = "authen")
 @Data
@@ -18,4 +19,5 @@ public class Authen {
 
     private String token;
 
+    private LocalDateTime expiration;
 }
