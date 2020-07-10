@@ -16,6 +16,8 @@ public interface UserService {
 
     String getTokenByUsernameAndPassword(String username, String password);
 
+    ProfileDTO createProfileUser(ProfileDTO profileDTO, String accessToken);
+
     ProfileDTO updateProfileUser(ProfileDTO profileDTO, String accessToken);
 
     ProfileDTO findProfileByAccessToken(String accessToken);

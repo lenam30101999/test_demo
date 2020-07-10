@@ -4,6 +4,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import tt.authenservice.encrypt.EnCryptMD5;
@@ -32,10 +33,10 @@ public class UserServiceImpl implements UserService {
     private AuthenRepository authenRepository;
 
     @Override
-//    @Caching(
-//            put = {@CachePut(value = "userCache", key = "#userDTO.")},
-//            evict = {@CacheEvict(value = "profileCache", allEntries = true)}
-//    )
+    @Caching(
+            put = {@CachePut(value = "userCache", key = "#userDTO.id")},
+            evict = {@CacheEvict(value = "profileCache", allEntries = true)}
+    )
     public UserDTO createUser(UserDTO userDTO) {
         User saved = User.builder()
                 .id(userDTO.getId())
@@ -43,22 +44,17 @@ public class UserServiceImpl implements UserService {
                 .passWord(convertPassword(userDTO.getPassWord()))
                 .roleName(userDTO.getRoleName())
                 .state(userDTO.getState())
-                .profile(userDTO.getProfile())
                 .build();
-
-//        Profile profile = Profile.builder()
-//                .id(userDTO.getId())
-//                .
 
         saved = userRepository.save(saved);
         return convertToUserDTO(saved);
     }
 
     @Override
-//    @Caching(
-//            put = {@CachePut(value = "userCache", key = "#user.id")},
-//            evict = {@CacheEvict(value = "profileCache", allEntries = true)}
-//    )
+    @Caching(
+            put = {@CachePut(value = "userCache", key = "#token")},
+            evict = {@CacheEvict(value = "profileCache", allEntries = true)}
+    )
     public UserDTO changePassword(String newPassword, String token) {
         String id = getIdUserFromAccessToken(token);
         User updated = findById(id);
@@ -72,9 +68,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-//    @Caching(
-//            evict = {@CacheEvict(value = "userCache", key = "#userId")}
-//    )
+    @Caching(
+            evict = {@CacheEvict(value = "userCache", key = "#accessToken")}
+    )
     public UserDTO deleteUserByAccessToken(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         User deleted = findById(id);
@@ -92,7 +88,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-//    @Cacheable(value = "userCache", key = "#user.id")
+    @Cacheable(value = "userCache", key = "#user.id")
     public String getTokenByUsernameAndPassword(String username, String password) {
         User found = userRepository.findByUserName(username).orElse(null);
 
@@ -106,6 +102,20 @@ public class UserServiceImpl implements UserService {
 
             return token;
         }else return null;
+    }
+
+    @Override
+    public ProfileDTO createProfileUser(ProfileDTO profileDTO, String accessToken) {
+        String id = getIdUserFromAccessToken(accessToken);
+
+        Profile saved = Profile.builder()
+                .id(id)
+                .phoneNumber(profileDTO.getPhoneNumber())
+                .homeTown(profileDTO.getHomeTown())
+                .email(profileDTO.getEmail())
+                .build();
+        saved = profileRepository.save(saved);
+        return convertToProfileDTO(saved);
     }
 
     @Override
@@ -198,7 +208,6 @@ public class UserServiceImpl implements UserService {
             dto.setPassWord(user.getPassWord());
             dto.setRoleName(user.getRoleName());
             dto.setState(user.getState());
-            dto.setProfile(user.getProfile());
 
             return dto;
         }else return null;

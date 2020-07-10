@@ -4,10 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import tt.authenservice.entity.BaseEntity;
-import tt.authenservice.entity.profile.Profile;
 
 import javax.persistence.*;
 
@@ -29,7 +27,5 @@ public class User extends BaseEntity {
     private RoleName roleName;
 
     private State state;
-
-    private Profile profile;
 
 }

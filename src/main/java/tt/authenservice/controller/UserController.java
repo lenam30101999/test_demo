@@ -16,6 +16,17 @@ public class UserController extends BaseController{
     @Autowired
     private UserService userService;
 
+    @PostMapping
+    public ResponseEntity<?> registerProfile(@RequestBody ProfileDTO profileDTO,
+                                             @RequestParam("token") String accessToken){
+        try {
+            ProfileDTO saved = userService.createProfileUser(profileDTO, accessToken);
+            return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        }catch (NullPointerException e){
+            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(), HttpStatus.NOT_ACCEPTABLE);
+        }
+    }
+
     @PutMapping
     public ResponseEntity<?> changePassword(@RequestBody User user,
                                             @RequestParam("token") String token){

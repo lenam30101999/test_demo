@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import tt.authenservice.entity.profile.Profile;
 
 @Data
 @NoArgsConstructor
@@ -30,5 +29,4 @@ public class UserDTO {
     @JsonProperty("state")
     private State state;
 
-    private Profile profile;
 }
