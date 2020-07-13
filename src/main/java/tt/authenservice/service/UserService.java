@@ -1,5 +1,6 @@
 package tt.authenservice.service;
 
+import tt.authenservice.entity.authentication.AuthenticationDTO;
 import tt.authenservice.entity.profile.ProfileDTO;
 import tt.authenservice.entity.user.UserDTO;
 
@@ -13,7 +14,9 @@ public interface UserService {
 
     UserDTO findByUserName(String userName);
 
-    String getTokenByUsernameAndPassword(String username, String password);
+    AuthenticationDTO getTokenByUsernameAndPassword(String username, String password);
+
+    String getNewAccessTokenByRefreshToken(String refreshToken);
 
     ProfileDTO createProfileUser(ProfileDTO profileDTO, String accessToken);
 

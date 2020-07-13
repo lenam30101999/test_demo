@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import tt.authenservice.encrypt.EnCryptMD5;
 import tt.authenservice.entity.authentication.Authentication;
+import tt.authenservice.entity.authentication.AuthenticationDTO;
 import tt.authenservice.entity.profile.Profile;
 import tt.authenservice.entity.profile.ProfileDTO;
 import tt.authenservice.entity.user.User;
@@ -55,8 +56,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Caching(
-            put = {@CachePut(value = "userCache", key = "#token")},
-            evict = {@CacheEvict(value = "profileCache", allEntries = true)}
+            put = {@CachePut(value = "userCache", key = "#token")}
     )
     public UserDTO changePassword(String newPassword, String token) {
         String id = getIdUserFromAccessToken(token);
@@ -72,7 +72,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Caching(
-            evict = {@CacheEvict(value = "userCache", key = "#accessToken")}
+            evict = {@CacheEvict(value = "userCache", key = "#accessToken"),
+                    @CacheEvict(value = "profileCache", key = "#accessToken")}
     )
     public UserDTO deleteUserByAccessToken(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
@@ -91,20 +92,50 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-//    @CachePut(value = "userCache", key = "#token")
-    public String getTokenByUsernameAndPassword(String username, String password) {
+//    @CachePut(value = "userCache", key = "#")
+    public AuthenticationDTO getTokenByUsernameAndPassword(String username, String password) {
         User found = userRepository.findByUserName(username).orElse(null);
 
         if (found != null && matching(found.getPassWord(), password)){
-            String token = generateToken(found);
+            Authentication authentication = authenticationRepository.findById(found.getId()).orElse(new Authentication());
 
-            Authentication authentication = new Authentication();
-            authentication.setId(found.getId());
-            authentication.setToken(token);
-            authentication.setExpiration(createExpires());
+            if (authentication.getToken() == null){
+                String token = generateToken(found);
+                String refreshToken = generateToken(found);
+
+                authentication = Authentication.builder()
+                        .id(found.getId())
+                        .token(token)
+                        .refreshToken(refreshToken)
+                        .expiration(createExpires())
+                        .build();
+                authentication.setCreatedAt(LocalDateTime.now());
+
+                authenticationRepository.save(authentication);
+
+                return convertToAuthenticationDTO(authentication);
+            }else{
+                return convertToAuthenticationDTO(authentication);
+            }
+        }else return null;
+    }
+
+    @Override
+    public String getNewAccessTokenByRefreshToken(String refreshToken) {
+        String id = getIdUserFromAccessToken(refreshToken);
+        Authentication authentication = authenticationRepository.findById(id).orElse(null);
+        User user = userRepository.findById(id).orElse(null);
+
+        if (!checkAccessTokenExpired(authentication.getToken()) && authentication != null){
+            String accessToken = generateToken(user);
+            LocalDateTime expires = createExpires();
+
+            authentication.setToken(accessToken);
+            authentication.setExpiration(expires);
+            authentication.setCreatedAt(LocalDateTime.now());
+
             authenticationRepository.save(authentication);
-
-            return token;
+            return accessToken;
         }else return null;
     }
 
@@ -122,6 +153,8 @@ public class UserServiceImpl implements UserService {
                     .homeTown(profileDTO.getHomeTown())
                     .email(profileDTO.getEmail())
                     .build();
+            saved.setCreatedAt(LocalDateTime.now());
+
             saved = profileRepository.save(saved);
             return convertToProfileDTO(saved);
         }else return null;
@@ -176,7 +209,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Caching(
-            evict = {@CacheEvict(value = "profileCache", key = "#accessToken")}
+            evict = {@CacheEvict(value = "profileCache", key = "#accessToken"),
+                    @CacheEvict(value = "userCache", key = "#accessToken")}
     )
     public void deleteTokenWhenLogout(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
@@ -245,6 +279,18 @@ public class UserServiceImpl implements UserService {
             dto.setHomeTown(profile.getHomeTown());
             dto.setEmail(profile.getEmail());
             dto.setPhoneNumber(profile.getPhoneNumber());
+
+            return dto;
+        }else return null;
+    }
+
+    private AuthenticationDTO convertToAuthenticationDTO(Authentication authentication){
+        AuthenticationDTO dto = new AuthenticationDTO();
+
+        if (authentication != null){
+            dto.setToken(authentication.getToken());
+            dto.setRefreshToken(authentication.getRefreshToken());
+            dto.setExpiration(authentication.getExpiration());
 
             return dto;
         }else return null;

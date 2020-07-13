@@ -18,7 +18,7 @@ public class UserController extends BaseController{
 
     @PostMapping
     public ResponseEntity<?> registerProfile(@RequestBody ProfileDTO profileDTO,
-                                             @RequestParam("token") String accessToken){
+                                             @RequestParam("accessToken") String accessToken){
         try {
             ProfileDTO saved = userService.createProfileUser(profileDTO, accessToken);
             return new ResponseEntity<>(saved, HttpStatus.CREATED);
@@ -29,7 +29,7 @@ public class UserController extends BaseController{
 
     @PutMapping
     public ResponseEntity<?> changePassword(@RequestBody User user,
-                                            @RequestParam("token") String token){
+                                            @RequestParam("accessToken") String token){
         try {
             String newPassword = user.getPassWord();
             UserDTO updated = userService.changePassword(newPassword, token);
@@ -72,6 +72,17 @@ public class UserController extends BaseController{
             return new ResponseEntity<>(profile,HttpStatus.OK);
         }catch (NullPointerException e){
             return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT.getReasonPhrase(),HttpStatus.REQUEST_TIMEOUT);
+        }
+    }
+
+    @GetMapping(value = "new")
+    public ResponseEntity<?> getNewAccessToken(@RequestParam("refreshToken") String refreshToken){
+        try {
+            String accessToken = userService.getNewAccessTokenByRefreshToken(refreshToken);
+
+            return new ResponseEntity<>(accessToken,HttpStatus.OK);
+        }catch (NullPointerException e){
+            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(),HttpStatus.NOT_ACCEPTABLE);
         }
     }
 }
