@@ -21,8 +21,8 @@ public class AuthenticationDTO {
     @JsonProperty("access_token")
     private String token;
 
-    @JsonProperty("refresh_token")
-    private String refreshToken;
+//    @JsonProperty("refresh_token")
+//    private String refreshToken;
 
     @JsonProperty("expiries")
     private LocalDateTime expiration;

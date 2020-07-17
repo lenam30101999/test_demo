@@ -22,7 +22,7 @@ public class Authentication extends BaseEntity {
 
     private String token;
 
-    private String refreshToken;
+//    private String refreshToken;
 
     private LocalDateTime expiration;
 }

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tt.authenservice.entity.Message;
 import tt.authenservice.entity.profile.ProfileDTO;
 import tt.authenservice.entity.user.User;
 import tt.authenservice.entity.user.UserDTO;
@@ -21,9 +22,16 @@ public class UserController extends BaseController{
                                              @RequestParam("accessToken") String accessToken){
         try {
             ProfileDTO saved = userService.createProfileUser(profileDTO, accessToken);
-            return new ResponseEntity<>(saved, HttpStatus.CREATED);
+
+            if (saved != null){
+                return new ResponseEntity<>(profileDTO, HttpStatus.OK);
+            }else {
+                Message message = new Message("Wrong email");
+                return new ResponseEntity<>(message, HttpStatus.NOT_ACCEPTABLE);
+            }
         }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(), HttpStatus.NOT_ACCEPTABLE);
+            Message message = new Message("Invalid");
+            return new ResponseEntity<>(message, HttpStatus.NOT_ACCEPTABLE);
         }
     }
 
@@ -31,12 +39,14 @@ public class UserController extends BaseController{
     public ResponseEntity<?> changePassword(@RequestBody User user,
                                             @RequestParam("accessToken") String token){
         try {
+            Message message = new Message("Invalid");
             String newPassword = user.getPassWord();
             UserDTO updated = userService.changePassword(newPassword, token);
 
-            return new ResponseEntity<>(updated, HttpStatus.OK);
+            return new ResponseEntity<>(message, HttpStatus.OK);
         }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT.getReasonPhrase(),HttpStatus.REQUEST_TIMEOUT);
+            Message message = new Message("Invalid");
+            return new ResponseEntity<>(message,HttpStatus.NOT_ACCEPTABLE);
         }
     }
 
@@ -52,7 +62,7 @@ public class UserController extends BaseController{
         }
     }
 
-    @PutMapping(value = "/profile")
+    @PutMapping(value = "/me")
     public ResponseEntity<?> updateProfile(@RequestBody ProfileDTO profileDTO,
                                            @RequestParam("accessToken") String accessToken){
         try {
@@ -60,7 +70,8 @@ public class UserController extends BaseController{
 
             return new ResponseEntity<>(updated,HttpStatus.OK);
         }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.NOT_MODIFIED.getReasonPhrase(),HttpStatus.NOT_MODIFIED);
+            Message message = new Message("Unsuccessful");
+            return new ResponseEntity<>(message,HttpStatus.NOT_MODIFIED);
         }
     }
 
@@ -71,18 +82,19 @@ public class UserController extends BaseController{
 
             return new ResponseEntity<>(profile,HttpStatus.OK);
         }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT.getReasonPhrase(),HttpStatus.REQUEST_TIMEOUT);
+            Message message = new Message("Not found");
+            return new ResponseEntity<>(message,HttpStatus.NOT_FOUND);
         }
     }
 
-    @GetMapping(value = "new")
-    public ResponseEntity<?> getNewAccessToken(@RequestParam("refreshToken") String refreshToken){
-        try {
-            String accessToken = userService.getNewAccessTokenByRefreshToken(refreshToken);
-
-            return new ResponseEntity<>(accessToken,HttpStatus.OK);
-        }catch (NullPointerException e){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(),HttpStatus.NOT_ACCEPTABLE);
-        }
-    }
+//    @GetMapping(value = "new")
+//    public ResponseEntity<?> getNewAccessToken(@RequestParam("refreshToken") String refreshToken){
+//        try {
+//            String accessToken = userService.getNewAccessTokenByRefreshToken(refreshToken);
+//
+//            return new ResponseEntity<>(accessToken,HttpStatus.OK);
+//        }catch (NullPointerException e){
+//            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE.getReasonPhrase(),HttpStatus.NOT_ACCEPTABLE);
+//        }
+//    }
 }

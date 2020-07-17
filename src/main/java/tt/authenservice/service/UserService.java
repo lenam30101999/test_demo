@@ -14,9 +14,9 @@ public interface UserService {
 
     UserDTO findByUserName(String userName);
 
-    AuthenticationDTO getTokenByUsernameAndPassword(String username, String password);
+    String getTokenByUsernameAndPassword(String username, String password);
 
-    String getNewAccessTokenByRefreshToken(String refreshToken);
+//    String getNewAccessTokenByRefreshToken(String refreshToken);
 
     ProfileDTO createProfileUser(ProfileDTO profileDTO, String accessToken);
 

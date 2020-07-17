@@ -1,13 +1,14 @@
 package tt.authenservice.service;
 
-import org.apache.commons.lang3.RandomStringUtils;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import tt.authenservice.cache.CacheManager;
+import tt.authenservice.config.RedissonConfig;
 import tt.authenservice.encrypt.EnCryptMD5;
+import tt.authenservice.entity.Email;
+import tt.authenservice.entity.GenerateKey;
+import tt.authenservice.entity.Token;
 import tt.authenservice.entity.authentication.Authentication;
 import tt.authenservice.entity.authentication.AuthenticationDTO;
 import tt.authenservice.entity.profile.Profile;
@@ -38,26 +39,20 @@ public class UserServiceImpl implements UserService {
     private AuthenticationRepository authenticationRepository;
 
     @Override
-    @Caching(
-            put = {@CachePut(value = "userCache", key = "#userDTO.id")}
-    )
     public UserDTO createUser(UserDTO userDTO) {
         User saved = User.builder()
-                .id(userDTO.getId())
-                .userName(userDTO.getUserName())
-                .passWord(convertPassword(userDTO.getPassWord()))
-                .roleName(userDTO.getRoleName())
-                .state(userDTO.getState())
-                .build();
+                    .id(userDTO.getId())
+                    .userName(userDTO.getUserName())
+                    .passWord(convertPassword(userDTO.getPassWord()))
+                    .roleName(userDTO.getRoleName())
+                    .state(userDTO.getState())
+                    .build();
 
         saved = userRepository.save(saved);
         return convertToUserDTO(saved);
     }
 
     @Override
-    @Caching(
-            put = {@CachePut(value = "userCache", key = "#token")}
-    )
     public UserDTO changePassword(String newPassword, String token) {
         String id = getIdUserFromAccessToken(token);
         User updated = findById(id);
@@ -71,10 +66,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Caching(
-            evict = {@CacheEvict(value = "userCache", key = "#accessToken"),
-                    @CacheEvict(value = "profileCache", key = "#accessToken")}
-    )
     public UserDTO deleteUserByAccessToken(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         User deleted = findById(id);
@@ -92,61 +83,43 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-//    @CachePut(value = "userCache", key = "#")
-    public AuthenticationDTO getTokenByUsernameAndPassword(String username, String password) {
+    public String getTokenByUsernameAndPassword(String username, String password) {
         User found = userRepository.findByUserName(username).orElse(null);
 
         if (found != null && matching(found.getPassWord(), password)){
-            Authentication authentication = authenticationRepository.findById(found.getId()).orElse(new Authentication());
-
-            if (authentication.getToken() == null){
-                String token = generateToken(found);
-                String refreshToken = generateToken(found);
-
-                authentication = Authentication.builder()
-                        .id(found.getId())
-                        .token(token)
-                        .refreshToken(refreshToken)
-                        .expiration(createExpires())
-                        .build();
-                authentication.setCreatedAt(LocalDateTime.now());
-
-                authenticationRepository.save(authentication);
-
-                return convertToAuthenticationDTO(authentication);
-            }else{
-                return convertToAuthenticationDTO(authentication);
-            }
+            Token token = new Token(found.getId());
+            String value = GenerateKey.getUserKey(token.toString());
+            CacheManager cacheManager = new CacheManager();
+            cacheManager.setToken(token, value);
+            return value;
         }else return null;
     }
 
+//    @Override
+//    public String getNewAccessTokenByRefreshToken(String refreshToken) {
+//        String id = getIdUserFromAccessToken(refreshToken);
+//        Authentication authentication = authenticationRepository.findById(id).orElse(null);
+//        User user = userRepository.findById(id).orElse(null);
+//
+//        if (!checkAccessTokenExpired(authentication.getToken()) && authentication != null){
+//            String accessToken = new Token(user.getId()).generateToken();
+//            LocalDateTime expires = createExpires();
+//
+//            authentication.setToken(accessToken);
+//            authentication.setExpiration(expires);
+//            authentication.setCreatedAt(LocalDateTime.now());
+//
+//            authenticationRepository.save(authentication);
+//            return accessToken;
+//        }else return null;
+//    }
+
     @Override
-    public String getNewAccessTokenByRefreshToken(String refreshToken) {
-        String id = getIdUserFromAccessToken(refreshToken);
-        Authentication authentication = authenticationRepository.findById(id).orElse(null);
-        User user = userRepository.findById(id).orElse(null);
-
-        if (!checkAccessTokenExpired(authentication.getToken()) && authentication != null){
-            String accessToken = generateToken(user);
-            LocalDateTime expires = createExpires();
-
-            authentication.setToken(accessToken);
-            authentication.setExpiration(expires);
-            authentication.setCreatedAt(LocalDateTime.now());
-
-            authenticationRepository.save(authentication);
-            return accessToken;
-        }else return null;
-    }
-
-    @Override
-    @Caching(
-            put = {@CachePut(value = "profileCache", key = "#accessToken")}
-    )
     public ProfileDTO createProfileUser(ProfileDTO profileDTO, String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
+        Email checkEmail = new Email();
 
-        if (checkAccessTokenExpired(accessToken)){
+        if (checkAccessTokenExpired(accessToken) && checkEmail.validate(profileDTO.getEmail())){
             Profile saved = Profile.builder()
                     .id(id)
                     .phoneNumber(profileDTO.getPhoneNumber())
@@ -161,9 +134,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Caching(
-            put = {@CachePut(value = "profileCache", key = "#accessToken")}
-    )
     public ProfileDTO updateProfileUser(ProfileDTO profileDTO, String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         Profile profile = profileRepository.findById(id).orElse(null);
@@ -180,8 +150,8 @@ public class UserServiceImpl implements UserService {
         }else return null;
     }
 
+    @SneakyThrows
     @Override
-    @Cacheable(value = "profileCache", key = "#accessToken")
     public ProfileDTO findProfileByAccessToken(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         Profile profile = profileRepository.findById(id).orElse(null);
@@ -194,9 +164,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Caching(
-            evict = {@CacheEvict(value = "profileCache", key = "#accessToken")}
-    )
     public ProfileDTO deleteProfileByAccessToken(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         Profile deleted = profileRepository.findById(id).orElse(null);
@@ -208,10 +175,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Caching(
-            evict = {@CacheEvict(value = "profileCache", key = "#accessToken"),
-                    @CacheEvict(value = "userCache", key = "#accessToken")}
-    )
     public void deleteTokenWhenLogout(String accessToken) {
         String id = getIdUserFromAccessToken(accessToken);
         authenticationRepository.deleteById(id);
@@ -289,7 +252,7 @@ public class UserServiceImpl implements UserService {
 
         if (authentication != null){
             dto.setToken(authentication.getToken());
-            dto.setRefreshToken(authentication.getRefreshToken());
+//            dto.setRefreshToken(authentication.getRefreshToken());
             dto.setExpiration(authentication.getExpiration());
 
             return dto;
@@ -301,11 +264,4 @@ public class UserServiceImpl implements UserService {
         return array.get(2);
     }
 
-    private String generateToken(User user)
-    {
-        EnCryptMD5 enCryptMD5 = new EnCryptMD5();
-        String tokens = "c_user" + "_" + user.getId() + "_" + enCryptMD5.md5(RandomStringUtils.randomAlphabetic(8));
-
-        return tokens;
-    }
 }

@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class EnCryptMD5 {
 
-    public String md5(String str){
+    public static String md5(String str){
         String result = "";
         MessageDigest digest;
         try {
